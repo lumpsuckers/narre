@@ -7,14 +7,15 @@ import tensorflow as tf
 import csv
 import pickle
 import os
+import sys
 
-tf.flags.DEFINE_string("valid_data", "../data/music/music_valid.csv", " Data for validation")
-tf.flags.DEFINE_string("test_data", "../data/music/music_test.csv", "Data for testing")
-tf.flags.DEFINE_string("train_data", "../data/music/music_train.csv", "Data for training")
-tf.flags.DEFINE_string("user_review", "../data/music/user_review", "User's reviews")
-tf.flags.DEFINE_string("item_review", "../data/music/item_review", "Item's reviews")
-tf.flags.DEFINE_string("user_review_id", "../data/music/user_rid", "user_review_id")
-tf.flags.DEFINE_string("item_review_id", "../data/music/item_rid", "item_review_id")
+tf.flags.DEFINE_string("valid_data", "../data/music_valid.csv", " Data for validation")
+tf.flags.DEFINE_string("test_data", "../data/music_test.csv", "Data for testing")
+tf.flags.DEFINE_string("train_data", "../data/music_train.csv", "Data for training")
+tf.flags.DEFINE_string("user_review", "../data/user_review", "User's reviews")
+tf.flags.DEFINE_string("item_review", "../data/item_review", "Item's reviews")
+tf.flags.DEFINE_string("user_review_id", "../data/user_rid", "user_review_id")
+tf.flags.DEFINE_string("item_review_id", "../data/item_rid", "item_review_id")
 tf.flags.DEFINE_string("stopwords", "../data/stopwords", "stopwords")
 
 
@@ -141,22 +142,22 @@ def load_data(train_data, valid_data, user_review, item_review, user_rid, item_r
     u_text, i_text, y_train, y_valid, u_len, i_len, u2_len, i2_len, uid_train, iid_train, uid_valid, iid_valid, user_num, item_num \
         , reid_user_train, reid_item_train, reid_user_valid, reid_item_valid = \
         load_data_and_labels(train_data, valid_data, user_review, item_review, user_rid, item_rid, stopwords)
-    print "load data done"
+    print ("load data done")
     u_text = pad_sentences(u_text, u_len, u2_len)
     reid_user_train, reid_user_valid = pad_reviewid(reid_user_train, reid_user_valid, u_len, item_num + 1)
 
-    print "pad user done"
+    print ("pad user done")
     i_text = pad_sentences(i_text, i_len, i2_len)
     reid_item_train, reid_item_valid = pad_reviewid(reid_item_train, reid_item_valid, i_len, user_num + 1)
 
-    print "pad item done"
+    print ("pad item done")
 
     user_voc = [xx for x in u_text.itervalues() for xx in x]
     item_voc = [xx for x in i_text.itervalues() for xx in x]
 
     vocabulary_user, vocabulary_inv_user, vocabulary_item, vocabulary_inv_item = build_vocab(user_voc, item_voc)
-    print len(vocabulary_user)
-    print len(vocabulary_item)
+    print (len(vocabulary_user))
+    print (len(vocabulary_item))
     u_text, i_text = build_input_data(u_text, i_text, vocabulary_user, vocabulary_item)
     y_train = np.array(y_train)
     y_valid = np.array(y_valid)
@@ -174,6 +175,11 @@ def load_data(train_data, valid_data, user_review, item_review, user_rid, item_r
             reid_item_train, reid_user_valid, reid_item_valid]
 
 
+def fix_python2_windows(file):
+    with open(file, "rb") as f:
+        data = f.read().replace(b'\r\n', b'\n')
+    return data
+
 def load_data_and_labels(train_data, valid_data, user_review, item_review, user_rid, item_rid, stopwords):
     """
     Loads MR polarity data from files, splits the data into words and generates labels.
@@ -181,17 +187,23 @@ def load_data_and_labels(train_data, valid_data, user_review, item_review, user_
     """
     # Load data from files
 
-
+    '''
     f_train = open(train_data, "r")
-    f1 = open(user_review)
-    f2 = open(item_review)
-    f3 = open(user_rid)
-    f4 = open(item_rid)
+    f1 = open(user_review, "rb")
+    f2 = open(item_review, "rb")
+    f3 = open(user_rid, "rb")
+    f4 = open(item_rid, "rb")
 
     user_reviews = pickle.load(f1)
     item_reviews = pickle.load(f2)
     user_rids = pickle.load(f3)
     item_rids = pickle.load(f4)
+    '''
+    f_train = open(train_data, "r")
+    user_reviews = fix_python2_windows(user_review)
+    item_reviews = fix_python2_windows(item_review)
+    user_rids = fix_python2_windows(user_rid)
+    item_rids = fix_python2_windows(item_rid)
 
     reid_user_train = []
     reid_item_train = []
@@ -206,9 +218,12 @@ def load_data_and_labels(train_data, valid_data, user_review, item_review, user_
     for line in f_train:
         i = i + 1
         line = line.split(',')
+        print("hi")
+        print(line)
         uid_train.append(int(line[0]))
         iid_train.append(int(line[1]))
-        if u_text.has_key(int(line[0])):
+        if int(line[0]) in u_text:
+        #if u_text.has_key(int(line[0])):
             reid_user_train.append(u_rid[int(line[0])])
         else:
             u_text[int(line[0])] = []
@@ -221,7 +236,8 @@ def load_data_and_labels(train_data, valid_data, user_review, item_review, user_
                 u_rid[int(line[0])].append(int(s))
             reid_user_train.append(u_rid[int(line[0])])
 
-        if i_text.has_key(int(line[1])):
+        if int(line[1]) in i_text:
+        #if i_text.has_key(int(line[1])):
             reid_item_train.append(i_rid[int(line[1])])  #####write here
         else:
             i_text[int(line[1])] = []
@@ -235,7 +251,7 @@ def load_data_and_labels(train_data, valid_data, user_review, item_review, user_
                 i_rid[int(line[1])].append(int(s))
             reid_item_train.append(i_rid[int(line[1])])
         y_train.append(float(line[2]))
-    print "valid"
+    print ("valid")
     reid_user_valid = []
     reid_item_valid = []
 
@@ -247,14 +263,16 @@ def load_data_and_labels(train_data, valid_data, user_review, item_review, user_
         line = line.split(',')
         uid_valid.append(int(line[0]))
         iid_valid.append(int(line[1]))
-        if u_text.has_key(int(line[0])):
+        if int(line[0]) in u_text:
+        #if u_text.has_key(int(line[0])):
             reid_user_valid.append(u_rid[int(line[0])])
         else:
             u_text[int(line[0])] = [['<PAD/>']]
             u_rid[int(line[0])] = [int(0)]
             reid_user_valid.append(u_rid[int(line[0])])
 
-        if i_text.has_key(int(line[1])):
+        if int(line[1]) in i_text:
+        #if i_text.has_key(int(line[1])):
             reid_item_valid.append(i_rid[int(line[1])])
         else:
             i_text[int(line[1])] = [['<PAD/>']]
@@ -262,7 +280,7 @@ def load_data_and_labels(train_data, valid_data, user_review, item_review, user_
             reid_item_valid.append(i_rid[int(line[1])])
 
         y_valid.append(float(line[2]))
-    print "len"
+    print ("len")
 
 
     review_num_u = np.array([len(x) for x in u_text.itervalues()])
@@ -278,23 +296,24 @@ def load_data_and_labels(train_data, valid_data, user_review, item_review, user_
     review_len_i = np.array([len(j) for i in i_text.itervalues() for j in i])
     y2 = np.sort(review_len_i)
     i2_len = y2[int(0.9 * len(review_len_i)) - 1]
-    print "u_len:", u_len
-    print "i_len:", i_len
-    print "u2_len:", u2_len
-    print "i2_len:", i2_len
+    print ("u_len:", u_len)
+    print ("i_len:", i_len)
+    print ("u2_len:", u2_len)
+    print ("i2_len:", i2_len)
     user_num = len(u_text)
     item_num = len(i_text)
-    print "user_num:", user_num
-    print "item_num:", item_num
+    print ("user_num:", user_num)
+    print ("item_num:", item_num)
     return [u_text, i_text, y_train, y_valid, u_len, i_len, u2_len, i2_len, uid_train,
             iid_train, uid_valid, iid_valid, user_num,
             item_num, reid_user_train, reid_item_train, reid_user_valid, reid_item_valid]
 
 
 if __name__ == '__main__':
-    TPS_DIR = '../data/music'
+    TPS_DIR = '../data'
     FLAGS = tf.flags.FLAGS
-    FLAGS._parse_flags()
+    #FLAGS._parse_flags()
+    FLAGS(sys.argv)
 
     u_text, i_text, y_train, y_valid, vocabulary_user, vocabulary_inv_user, vocabulary_item, \
     vocabulary_inv_item, uid_train, iid_train, uid_valid, iid_valid, user_num, item_num, reid_user_train, reid_item_train, reid_user_valid, reid_item_valid = \
@@ -322,7 +341,7 @@ if __name__ == '__main__':
     batches_train = list(
         zip(userid_train, itemid_train, reid_user_train, reid_item_train, y_train))
     batches_test = list(zip(userid_valid, itemid_valid, reid_user_valid, reid_item_valid, y_valid))
-    print 'write begin'
+    print ('write begin')
     output = open(os.path.join(TPS_DIR, 'music.train'), 'wb')
     pickle.dump(batches_train, output)
     output = open(os.path.join(TPS_DIR, 'music.test'), 'wb')
@@ -345,13 +364,3 @@ if __name__ == '__main__':
 
     # Pickle dictionary using protocol 0.
     pickle.dump(para, output)
-
-
-
-
-
-
-
-
-
-

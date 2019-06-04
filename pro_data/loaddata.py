@@ -11,10 +11,10 @@ Chong Chen (cstchenc@163.com)
 import os
 import json
 import pandas as pd
-import pickle
+import dill as pickle
 import numpy as np
-TPS_DIR = '../data/music'
-TP_file = os.path.join(TPS_DIR, 'Digital_Music_5.json')
+TPS_DIR = '../data'
+TP_file = os.path.join(TPS_DIR, 'Musical_Instruments_5.json')
 
 f= open(TP_file)
 users_id=[]
@@ -26,10 +26,10 @@ np.random.seed(2017)
 for line in f:
     js=json.loads(line)
     if str(js['reviewerID'])=='unknown':
-        print "unknown"
+        print ("unknown")
         continue
     if str(js['asin'])=='unknown':
-        print "unknown2"
+        print ("unknown2")
         continue
     reviews.append(js['reviewText'])
     users_id.append(str(js['reviewerID'])+',')
@@ -40,15 +40,20 @@ data=pd.DataFrame({'user_id':pd.Series(users_id),
                    'ratings':pd.Series(ratings),
                    'reviews':pd.Series(reviews)})[['user_id','item_id','ratings','reviews']]
 
+print(data.head())
+
 def get_count(tp, id):
     playcount_groupbyid = tp[[id, 'ratings']].groupby(id, as_index=False)
     count = playcount_groupbyid.size()
     return count
+
 usercount, itemcount = get_count(data, 'user_id'), get_count(data, 'item_id')
+
 unique_uid = usercount.index
 unique_sid = itemcount.index
 item2id = dict((sid, i) for (i, sid) in enumerate(unique_sid))
 user2id = dict((uid, i) for (i, uid) in enumerate(unique_uid))
+
 def numerize(tp):
     uid = map(lambda x: user2id[x], tp['user_id'])
     sid = map(lambda x: item2id[x], tp['item_id'])
@@ -58,7 +63,8 @@ def numerize(tp):
 
 data=numerize(data)
 tp_rating=data[['user_id','item_id','ratings']]
-
+print("new")
+print(tp_rating.head())
 
 n_ratings = tp_rating.shape[0]
 test = np.random.choice(n_ratings, size=int(0.20 * n_ratings), replace=False)
@@ -70,6 +76,8 @@ tp_train= tp_rating[~test_idx]
 
 data2=data[test_idx]
 data=data[~test_idx]
+
+
 
 
 n_ratings = tp_1.shape[0]
@@ -89,13 +97,15 @@ item_reviews={}
 user_rid={}
 item_rid={}
 for i in data.values:
-    if user_reviews.has_key(i[0]):
+    if i[0] in user_reviews:
+    #if user_reviews.has_key(i[0]):
         user_reviews[i[0]].append(i[3])
         user_rid[i[0]].append(i[1])
     else:
         user_rid[i[0]]=[i[1]]
         user_reviews[i[0]]=[i[3]]
-    if item_reviews.has_key(i[1]):
+    if i[1] in item_reviews:
+    #if item_reviews.has_key(i[1]):
         item_reviews[i[1]].append(i[3])
         item_rid[i[1]].append(i[0])
     else:
@@ -104,12 +114,14 @@ for i in data.values:
 
 
 for i in data2.values:
-    if user_reviews.has_key(i[0]):
+    if i[0] in user_reviews:
+    #if user_reviews.has_key(i[0]):
         l=1
     else:
         user_rid[i[0]]=[0]
         user_reviews[i[0]]=['0']
-    if item_reviews.has_key(i[1]):
+    if i[1] in item_reviews:
+    #if item_reviews.has_key(i[1]):
         l=1
     else:
         item_reviews[i[1]] = [0]
@@ -123,6 +135,6 @@ pickle.dump(item_rid, open(os.path.join(TPS_DIR, 'item_rid'), 'wb'))
 usercount, itemcount = get_count(data, 'user_id'), get_count(data, 'item_id')
 
 
-print np.sort(np.array(usercount.values))
+print (np.sort(np.array(usercount.values)))
 
-print np.sort(np.array(itemcount.values))
+print (np.sort(np.array(itemcount.values)))
