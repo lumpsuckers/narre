@@ -1,6 +1,5 @@
 import pickle
 
-
 f1 = open("../data/user_review", "rb")
 user_reviews = pickle.load(f1)
 
