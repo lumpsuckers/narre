@@ -8,7 +8,6 @@ Chong Chen (cstchenc@163.com)
 @references:
 
 '''
-
 import numpy as np
 import tensorflow as tf
 import pickle
@@ -56,14 +55,12 @@ def train_step(u_batch, i_batch, uid, iid, reuid, reiid, y_batch,batch_num):
         [train_op, global_step, deep.loss, deep.accuracy, deep.mae, deep.u_a, deep.i_a, deep.score],
         feed_dict)
     time_str = datetime.datetime.now().isoformat()
-    #print("{}: step {}, loss {:g}, rmse {:g},mae {:g}".format(time_str, batch_num, loss, accuracy, mae))
+    # print("{}: step {}, loss {:g}, rmse {:g},mae {:g}".format(time_str, batch_num, loss, accuracy, mae))
     return accuracy, mae, u_a, i_a, fm
-
 
 def dev_step(u_batch, i_batch, uid, iid, reuid, reiid, y_batch, writer=None):
     """
     Evaluates model on a dev set
-
     """
     feed_dict = {
         deep.input_u: u_batch,
@@ -76,12 +73,12 @@ def dev_step(u_batch, i_batch, uid, iid, reuid, reiid, y_batch, writer=None):
         deep.drop0: 1.0,
         deep.dropout_keep_prob: 1.0
     }
+    
     step, loss, accuracy, mae = sess.run(
         [global_step, deep.loss, deep.accuracy, deep.mae],
         feed_dict)
     time_str = datetime.datetime.now().isoformat()
     # print("{}: step{}, loss {:g}, rmse {:g},mae {:g}".format(time_str, step, loss, accuracy, mae))
-
     return [loss, accuracy, mae]
 
 if __name__ == '__main__':
@@ -91,17 +88,18 @@ if __name__ == '__main__':
     for attr, value in sorted(FLAGS.__flags.items()):
         print("{}={}".format(attr.upper(), value))
     print("")
-
     print("Loading data...")
     pkl_file = open(FLAGS.para_data, 'rb')
 
     para = pickle.load(pkl_file)
     user_num = para['user_num']
     item_num = para['item_num']
+    
     review_num_u = para['review_num_u']
     review_num_i = para['review_num_i']
     review_len_u = para['review_len_u']
     review_len_i = para['review_len_i']
+    
     vocabulary_user = para['user_vocab']
     vocabulary_item = para['item_vocab']
     train_length = para['train_length']
@@ -149,14 +147,11 @@ if __name__ == '__main__':
 
             # optimizer = tf.train.AdagradOptimizer(learning_rate=0.01, initial_accumulator_value=1e-8).minimize(deep.loss)
             optimizer = tf.train.AdamOptimizer(0.002, beta1=0.9, beta2=0.999, epsilon=1e-8).minimize(deep.loss)
-            
             train_op = optimizer  # .apply_gradients(grads_and_vars, global_step=global_step)
 
 
             sess.run(tf.initialize_all_variables())
-
             saver = tf.train.Saver()
-
             if FLAGS.word2vec:
                 # initial matrix with random uniform
                 u = 0
@@ -188,7 +183,6 @@ if __name__ == '__main__':
                 initW = np.random.uniform(-1.0, 1.0, (len(vocabulary_item), FLAGS.embedding_dim))
                 # load any vectors from the word2vec
                 print("Load word2vec i file {}\n".format(FLAGS.word2vec))
-
                 item = 0
                 with open(FLAGS.word2vec, "rb") as f:
                     header = f.readline()
@@ -221,14 +215,10 @@ if __name__ == '__main__':
             train_rmse = 0
 
             pkl_file = open(FLAGS.train_data, 'rb')
-
             train_data = pickle.load(pkl_file)
-
             train_data = np.array(train_data)
             pkl_file.close()
-
             pkl_file = open(FLAGS.valid_data, 'rb')
-
             test_data = pickle.load(pkl_file)
             test_data = np.array(test_data)
             pkl_file.close()
@@ -329,7 +319,6 @@ if __name__ == '__main__':
                         i_valid.append(i_text[itemid_valid[i][0]])
                     u_valid = np.array(u_valid)
                     i_valid = np.array(i_valid)
-
                     loss, accuracy, mae = dev_step(u_valid, i_valid, userid_valid, itemid_valid, reuid, reiid, y_valid)
                     loss_s = loss_s + len(u_valid) * loss
                     accuracy_s = accuracy_s + len(u_valid) * np.square(accuracy)
