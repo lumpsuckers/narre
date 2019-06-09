@@ -18,7 +18,6 @@ tf.flags.DEFINE_string("user_review_id", "../data/user_rid", "user_review_id")
 tf.flags.DEFINE_string("item_review_id", "../data/item_rid", "item_review_id")
 tf.flags.DEFINE_string("stopwords", "../data/stopwords", "stopwords")
 
-
 def clean_str(string):
     """
     Tokenization/string cleaning for all datasets except for SST.
@@ -39,7 +38,6 @@ def clean_str(string):
     string = re.sub(r"\s{2,}", " ", string)
     return string.strip().lower()
 
-
 def pad_sentences(u_text, u_len, u2_len, padding_word="<PAD/>"):
     """
     Pads all sentences to the same length. The length is defined by the longest sentence.
@@ -47,7 +45,6 @@ def pad_sentences(u_text, u_len, u2_len, padding_word="<PAD/>"):
     """
     review_num = u_len
     review_len = u2_len
-
     u_text2 = {}
     for i in u_text.keys():
         u_reviews = u_text[i]
@@ -68,7 +65,6 @@ def pad_sentences(u_text, u_len, u2_len, padding_word="<PAD/>"):
         u_text2[i] = padded_u_train
 
     return u_text2
-
 
 def pad_reviewid(u_train, u_valid, u_len, num):
     pad_u_train = []
@@ -91,7 +87,6 @@ def pad_reviewid(u_train, u_valid, u_len, num):
         pad_u_valid.append(x)
     return pad_u_train, pad_u_valid
 
-
 def build_vocab(sentences1, sentences2):
     """
     Builds a vocabulary mapping from word to index based on the sentences.
@@ -113,7 +108,6 @@ def build_vocab(sentences1, sentences2):
     vocabulary2 = {x: i for i, x in enumerate(vocabulary_inv2)}
     return [vocabulary1, vocabulary_inv1, vocabulary2, vocabulary_inv2]
 
-
 def build_input_data(u_text, i_text, vocabulary_u, vocabulary_i):
     """
     Maps sentencs and labels to vectors based on a vocabulary.
@@ -131,7 +125,6 @@ def build_input_data(u_text, i_text, vocabulary_u, vocabulary_i):
         i = np.array([[vocabulary_i[word] for word in words] for words in i_reviews])
         i_text2[j] = i
     return u_text2, i_text2
-
 
 def load_data(train_data, valid_data, user_review, item_review, user_rid, item_rid, stopwords):
     """
@@ -161,10 +154,12 @@ def load_data(train_data, valid_data, user_review, item_review, user_rid, item_r
     u_text, i_text = build_input_data(u_text, i_text, vocabulary_user, vocabulary_item)
     y_train = np.array(y_train)
     y_valid = np.array(y_valid)
+    
     uid_train = np.array(uid_train)
     uid_valid = np.array(uid_valid)
     iid_train = np.array(iid_train)
     iid_valid = np.array(iid_valid)
+    
     reid_user_train = np.array(reid_user_train)
     reid_user_valid = np.array(reid_user_valid)
     reid_item_train = np.array(reid_item_train)
@@ -173,7 +168,6 @@ def load_data(train_data, valid_data, user_review, item_review, user_rid, item_r
     return [u_text, i_text, y_train, y_valid, vocabulary_user, vocabulary_inv_user, vocabulary_item,
             vocabulary_inv_item, uid_train, iid_train, uid_valid, iid_valid, user_num, item_num, reid_user_train,
             reid_item_train, reid_user_valid, reid_item_valid]
-
 
 def fix_python2_windows(file):
     with open(file, "rb") as f:
@@ -215,6 +209,7 @@ def load_data_and_labels(train_data, valid_data, user_review, item_review, user_
     i_text = {}
     i_rid = {}
     i = 0
+    
     for line in f_train:
         i = i + 1
         line = line.split(',')
@@ -259,6 +254,7 @@ def load_data_and_labels(train_data, valid_data, user_review, item_review, user_
     iid_valid = []
     y_valid = []
     f_valid = open(valid_data)
+    
     for line in f_valid:
         line = line.split(',')
         uid_valid.append(int(line[0]))
@@ -308,7 +304,6 @@ def load_data_and_labels(train_data, valid_data, user_review, item_review, user_
             iid_train, uid_valid, iid_valid, user_num,
             item_num, reid_user_train, reid_item_train, reid_user_valid, reid_item_valid]
 
-
 if __name__ == '__main__':
     TPS_DIR = '../data'
     FLAGS = tf.flags.FLAGS
@@ -321,9 +316,7 @@ if __name__ == '__main__':
                   FLAGS.item_review_id, FLAGS.stopwords)
 
     np.random.seed(2017)
-
     shuffle_indices = np.random.permutation(np.arange(len(y_train)))
-
     userid_train = uid_train[shuffle_indices]
     itemid_train = iid_train[shuffle_indices]
     y_train = y_train[shuffle_indices]
