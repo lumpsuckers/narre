@@ -8,8 +8,6 @@ Chong Chen (cstchenc@163.com)
 @references:
 Chong Chen, Min Zhang, Yiqun Liu, and Shaoping Ma. 2018. Neural Attentional Rating Regression with Review-level Explanations. In WWW'18.
 '''
-
-
 import tensorflow as tf
 
 class NARRE(object):
@@ -28,7 +26,6 @@ class NARRE(object):
         self.drop0 = tf.placeholder(tf.float32, name="dropout0")
         iidW = tf.Variable(tf.random_uniform([item_num + 2, embedding_id], -0.1, 0.1), name="iidW")
         uidW = tf.Variable(tf.random_uniform([user_num + 2, embedding_id], -0.1, 0.1), name="uidW")
-
         l2_loss = tf.constant(0.0)
         with tf.name_scope("user_embedding"):
             self.W1 = tf.Variable(
@@ -45,7 +42,6 @@ class NARRE(object):
             self.embedded_item = tf.nn.embedding_lookup(self.W2, self.input_i)
             self.embedded_items = tf.expand_dims(self.embedded_item, -1)
 
-
         pooled_outputs_u = []
         for i, filter_size in enumerate(filter_sizes):
             with tf.name_scope("user_conv-maxpool-%s" % filter_size):
@@ -54,7 +50,6 @@ class NARRE(object):
                 W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
                 b = tf.Variable(tf.constant(0.1, shape=[num_filters]), name="b")
                 self.embedded_users = tf.reshape(self.embedded_users, [-1, review_len_u, embedding_size, 1])
-
                 conv = tf.nn.conv2d(
                     self.embedded_users,
                     W,
@@ -77,7 +72,6 @@ class NARRE(object):
         self.h_pool_flat_u = tf.reshape(self.h_pool_u, [-1, review_num_u, num_filters_total])
 
         pooled_outputs_i = []
-
         for i, filter_size in enumerate(filter_sizes):
             with tf.name_scope("item_conv-maxpool-%s" % filter_size):
                 # Convolution Layer
@@ -104,7 +98,6 @@ class NARRE(object):
         num_filters_total = num_filters * len(filter_sizes)
         self.h_pool_i = tf.concat(pooled_outputs_i,3)
         self.h_pool_flat_i = tf.reshape(self.h_pool_i, [-1, review_num_i, num_filters_total])
-
         with tf.name_scope("dropout"):
             self.h_drop_u = tf.nn.dropout(self.h_pool_flat_u, 1.0)
             self.h_drop_i = tf.nn.dropout(self.h_pool_flat_i, 1.0)
@@ -121,11 +114,8 @@ class NARRE(object):
             self.u_j = tf.einsum('ajk,kl->ajl', tf.nn.relu(
                 tf.einsum('ajk,kl->ajl', self.h_drop_u, Wau) + tf.einsum('ajk,kl->ajl', self.iid_a, Wru) + bau),
                                              Wpu)+bbu  # None*u_len*1
-
             self.u_a = tf.nn.softmax(self.u_j,1)  # none*u_len*1
-
             print (self.u_a)
-
             Wai = tf.Variable(
                 tf.random_uniform([num_filters_total, attention_size], -0.1, 0.1), name='Wai')
             Wri = tf.Variable(
@@ -140,12 +130,10 @@ class NARRE(object):
                                              Wpi)+bbi
 
             self.i_a = tf.nn.softmax(self.i_j,1)  # none*len*1
-
             l2_loss += tf.nn.l2_loss(Wau)
             l2_loss += tf.nn.l2_loss(Wru)
             l2_loss += tf.nn.l2_loss(Wri)
             l2_loss += tf.nn.l2_loss(Wai)
-
         with tf.name_scope("add_reviews"):
             self.u_feas = tf.reduce_sum(tf.multiply(self.u_a, self.h_drop_u), 1)
             self.u_feas = tf.nn.dropout(self.u_feas, self.dropout_keep_prob)
@@ -164,37 +152,26 @@ class NARRE(object):
                 tf.random_uniform([num_filters_total, n_latent], -0.1, 0.1), name='Wu')
             bu = tf.Variable(tf.constant(0.1, shape=[n_latent]), name="bu")
             self.u_feas = tf.matmul(self.u_feas, Wu)+self.uid + bu
-
             Wi = tf.Variable(
                 tf.random_uniform([num_filters_total, n_latent], -0.1, 0.1), name='Wi')
             bi = tf.Variable(tf.constant(0.1, shape=[n_latent]), name="bi")
             self.i_feas = tf.matmul(self.i_feas, Wi) +self.iid+ bi
 
-
-
         with tf.name_scope('ncf'):
-
             self.FM = tf.multiply(self.u_feas, self.i_feas)
             self.FM = tf.nn.relu(self.FM)
-
             self.FM=tf.nn.dropout(self.FM,self.dropout_keep_prob)
-
             Wmul=tf.Variable(
                 tf.random_uniform([n_latent, 1], -0.1, 0.1), name='wmul')
-
             self.mul=tf.matmul(self.FM,Wmul)
             self.score=tf.reduce_sum(self.mul,1,keep_dims=True)
-
             self.uidW2 = tf.Variable(tf.constant(0.1, shape=[user_num + 2]), name="uidW2")
             self.iidW2 = tf.Variable(tf.constant(0.1, shape=[item_num + 2]), name="iidW2")
             self.u_bias = tf.gather(self.uidW2, self.input_uid)
             self.i_bias = tf.gather(self.iidW2, self.input_iid)
             self.Feature_bias = self.u_bias + self.i_bias
-
             self.bised = tf.Variable(tf.constant(0.1), name='bias')
-
             self.predictions = self.score + self.Feature_bias + self.bised
-
         with tf.name_scope("loss"):
             losses = tf.nn.l2_loss(tf.subtract(self.predictions, self.input_y))
 
